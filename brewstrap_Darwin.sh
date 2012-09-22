@@ -42,6 +42,7 @@ USING_RBENV=0
 TOTAL=14
 STEP=1
 XCODE=false
+RVM=true
 clear
 
 GIT_DEBUG=""
@@ -99,13 +100,13 @@ function attempt_to_download_osx_gcc_installer() {
   TOTAL=12
   echo -e "OSX GCC Installer is not installed or downloaded. Downloading now..."
   echo -e "Brewstrap will continue when the download is complete. Press Ctrl-C to abort."
-  curl -L "$(eval "echo \${$(echo OSX_GCC_INSTALLER_URL_${DARWIN_VERSION})}")" > ${WORK_DIR}/$(eval "echo \${$(echo OSX_GCC_INSTALLER_NAME_${DARWIN_VERSION})}")
+  curl -L "$OSX_GCC_INSTALLER_URL" > ${WORK_DIR}/$OSX_GCC_INSTALLER_NAME
   SUCCESS="1"
   while [ $SUCCESS -eq "1" ]; do
-    if [ -e ${WORK_DIR}/$(eval "echo \${$(echo OSX_GCC_INSTALLER_NAME_${DARWIN_VERSION})}") ]; then
-      for file in $(ls -c1 ${WORK_DIR}/$(eval "echo \${$(echo OSX_GCC_INSTALLER_NAME_${DARWIN_VERSION})}")); do
+    if [ -e ${WORK_DIR}/$OSX_GCC_INSTALLER_NAME ]; then
+      for file in $(ls -c1 ${WORK_DIR}/$OSX_GCC_INSTALLER_NAME); do
         echo "Found ${file}. Verifying..."
-        test `shasum ${WORK_DIR}/$(eval "echo \${$(echo OSX_GCC_INSTALLER_NAME_${DARWIN_VERSION})}") | cut -f 1 -d ' '` = "$(eval "echo \${$(echo OSX_GCC_INSTALLER_SHA_${DARWIN_VERSION})}")"
+        test `shasum ${WORK_DIR}/$OSX_GCC_INSTALLER_NAME | cut -f 1 -d ' '` = "$OSX_GCC_INSTALLER_SHA"
         SUCCESS=$?
         if [ $SUCCESS -eq "0" ]; then
           OSX_GCC_INSTALLER=$file
@@ -125,6 +126,7 @@ function attempt_to_download_osx_gcc_installer() {
 }
 
 function add_user_to_sudoers() {
+
   (sudo grep "^${USER}[[:blank:]]*ALL=(ALL)[[:blank:]]*NOPASSWD\:[[:blank:]]*ALL[[:blank:]]*$" /etc/sudoers 1>/dev/null 2>&1)
   if [ "$?" -ne "0" ]; then
     (sudo lockfile -r 0 /etc/sudoers.tmp 1>/dev/null 2>&1)
@@ -165,7 +167,6 @@ echo -e "You will need your github credentials so now might be a good time to lo
 [[ -s "$BREWSTRAPRC" ]] && source "$BREWSTRAPRC"
 
 echo -e "\nMac OS X Version ${DARWIN_VERSION} detected.\n"
-exit 0
 
 if [ -e .rvmrc ]; then
   print_error "Do not run brewstrap from within a directory with an existing .rvmrc!\nIt causes the wrong environment to load."
@@ -229,7 +230,7 @@ else
 fi
 
 if [ ! -e /usr/bin/gcc ]; then
-  if [ $XCODE ]; then
+  if $XCODE ; then
     print_step "There is no GCC available, installing XCode"
     if [ ! -d /Developer/Applications/Xcode.app ]; then
       if [ -e /Applications/Install\ Xcode.app ]; then
@@ -272,10 +273,6 @@ if [ ! -e /usr/bin/gcc ]; then
   fi
 fi
 
-brew update
-brew tap homebrew/homebrew-dupes
-brew install apple-gcc42
-
 GIT_PATH=`which git`
 if [ $? != 0 ]; then
   print_step "Brew installing git"
@@ -285,6 +282,13 @@ if [ $? != 0 ]; then
   fi
 else
   print_step "Git already installed"
+fi
+
+brew update
+
+if [ $DARWIN_VERSION != "10_6" ]; then
+  brew tap homebrew/homebrew-dupes
+  brew install apple-gcc42
 fi
 
 if [ ! -e /usr/bin/gcc-4.2 ]; then
@@ -300,10 +304,10 @@ fi
 echo "Got past git install"
 exit 0
 
-if [ $RVM ]; then
+if $RVM ; then
   RUBY_RUNNER="rvm ${RVM_RUBY_VERSION} exec"
-  if [ ! -e ~/.rvm/bin/rvm ]; then
-    print_step "Installing RVM (Forced)"
+  if [ ! -e /usr/local/rvm/bin/rvm ]; then
+    print_step "Installing RVM"
     bash -s stable < <( curl -fsSL ${RVM_URL} )
     if [ ! $? -eq 0 ]; then
       print_error "Unable to install RVM!"
