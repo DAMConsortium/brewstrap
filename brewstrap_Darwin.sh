@@ -9,12 +9,30 @@ RBENV_RUBY_VERSION="1.9.3-p125"
 RVM_RUBY_VERSION="ruby-1.9.3-p125"
 CHEF_MIN_VERSION="10.12.0"
 CHEF_LIBRARIAN_MIN_VERSION="0.0.24"
-XCODE_DMG_NAME="xcode_4.1_for_lion.dmg"
-XCODE_SHA="2a67c713ab1ef7a47356ba86445f6e630c674b17"
-XCODE_URL="http://developer.apple.com/downloads/download.action?path=Developer_Tools/xcode_4.1_for_lion/xcode_4.1_for_lion.dmg"
-OSX_GCC_INSTALLER_NAME="GCC-10.7-v2.pkg"
-OSX_GCC_INSTALLER_URL="https://github.com/downloads/kennethreitz/osx-gcc-installer/GCC-10.7-v2.pkg"
-OSX_GCC_INSTALLER_SHA="027a045fc3e34a8839a7b0e40fa2cfb0cc06c652"
+DARWIN_VERSION=`/usr/bin/sw_vers -productVersion | sed 's/\(^[0-9]*\)\.\([0-9]*\)\(\..*\)/\1_\2/'`
+XCODE_DMG_NAME_10_7="command_line_tools_for_xcode_4.5_os_x_lion.dmg"
+XCODE_SHA_10_7="fd0181ba0057d473d01537816b0b688672c6a73c"
+XCODE_URL_10_7="http://developer.apple.com/downloads/download.action?path=Developer_Tools/command_line_tools_for_xcode_4.5_os_x_lion__september_2012/command_line_tools_for_xcode_4.5_os_x_lion.dmg"
+XCODE_DMG_NAME_10_8="command_line_tools_for_xcode_4.5_os_x_mountain_lion.dmg"
+XCODE_SHA_10_8="2c166ad4b58d2aebbfcd32865410ddb6140b9a2c"
+XCODE_URL_10_8="http://developer.apple.com/downloads/download.action?path=Developer_Tools/command_line_tools_for_xcode_4.5_os_x_mountain_lion__september_2012/command_line_tools_for_xcode_4.5_os_x_mountain_lion.dmg"
+if [ $DARWIN_VERSION != "10_6" ]; then
+  XCODE_DMG_NAME=$(eval "echo \${$(echo XCODE_DMG_NAME_${DARWIN_VERSION})}")
+  XCODE_SHA=$(eval "echo \${$(echo XCODE_SHA_${DARWIN_VERSION})}")
+  XCODE_URL=$(eval "echo \${$(echo XCODE_URL_${DARWIN_VERSION})}")
+fi
+OSX_GCC_INSTALLER_NAME_10_6="GCC-10.6.pkg"
+OSX_GCC_INSTALLER_URL_10_6="https://github.com/downloads/kennethreitz/osx-gcc-installer/GCC-10.6.pkg"
+OSX_GCC_INSTALLER_SHA_10_6="d3317ab4da8fb7ab24c2a17c986def55a2cef2e1"
+OSX_GCC_INSTALLER_NAME_10_7="GCC-10.7-v2.pkg"
+OSX_GCC_INSTALLER_URL_10_7="https://github.com/downloads/kennethreitz/osx-gcc-installer/GCC-10.7-v2.pkg"
+OSX_GCC_INSTALLER_SHA_10_7="027a045fc3e34a8839a7b0e40fa2cfb0cc06c652"
+OSX_GCC_INSTALLER_NAME_10_8="GCC-10.7-v2.pkg"
+OSX_GCC_INSTALLER_URL_10_8="https://github.com/downloads/kennethreitz/osx-gcc-installer/GCC-10.7-v2.pkg"
+OSX_GCC_INSTALLER_SHA_10_8="027a045fc3e34a8839a7b0e40fa2cfb0cc06c652"
+OSX_GCC_INSTALLER_NAME=$(eval "echo \${$(echo OSX_GCC_INSTALLER_NAME_${DARWIN_VERSION})}")
+OSX_GCC_INSTALLER_URL=$(eval "echo \${$(echo OSX_GCC_INSTALLER_URL_${DARWIN_VERSION})}")
+OSX_GCC_INSTALLER_SHA=$(eval "echo \${$(echo OSX_GCC_INSTALLER_SHA_${DARWIN_VERSION})}")
 ORIGINAL_PWD=`pwd`
 GIT_PASSWORD_SCRIPT="${WORK_DIR}/retrieve_git_password.sh"
 RUBY_RUNNER=""
@@ -23,6 +41,7 @@ USING_RVM=0
 USING_RBENV=0
 TOTAL=14
 STEP=1
+XCODE=false
 clear
 
 GIT_DEBUG=""
@@ -80,13 +99,13 @@ function attempt_to_download_osx_gcc_installer() {
   TOTAL=12
   echo -e "OSX GCC Installer is not installed or downloaded. Downloading now..."
   echo -e "Brewstrap will continue when the download is complete. Press Ctrl-C to abort."
-  curl -L "${OSX_GCC_INSTALLER_URL}" > ${WORK_DIR}/GCC-10.7-v2.pkg
+  curl -L "$(eval "echo \${$(echo OSX_GCC_INSTALLER_URL_${DARWIN_VERSION})}")" > ${WORK_DIR}/$(eval "echo \${$(echo OSX_GCC_INSTALLER_NAME_${DARWIN_VERSION})}")
   SUCCESS="1"
   while [ $SUCCESS -eq "1" ]; do
-    if [ -e ${WORK_DIR}/${OSX_GCC_INSTALLER_NAME} ]; then
-      for file in $(ls -c1 ${WORK_DIR}/${OSX_GCC_INSTALLER_NAME}); do
+    if [ -e ${WORK_DIR}/$(eval "echo \${$(echo OSX_GCC_INSTALLER_NAME_${DARWIN_VERSION})}") ]; then
+      for file in $(ls -c1 ${WORK_DIR}/$(eval "echo \${$(echo OSX_GCC_INSTALLER_NAME_${DARWIN_VERSION})}")); do
         echo "Found ${file}. Verifying..."
-        test `shasum ${WORK_DIR}/${OSX_GCC_INSTALLER_NAME} | cut -f 1 -d ' '` = "${OSX_GCC_INSTALLER_SHA}"
+        test `shasum ${WORK_DIR}/$(eval "echo \${$(echo OSX_GCC_INSTALLER_NAME_${DARWIN_VERSION})}") | cut -f 1 -d ' '` = "$(eval "echo \${$(echo OSX_GCC_INSTALLER_SHA_${DARWIN_VERSION})}")"
         SUCCESS=$?
         if [ $SUCCESS -eq "0" ]; then
           OSX_GCC_INSTALLER=$file
@@ -105,6 +124,35 @@ function attempt_to_download_osx_gcc_installer() {
   done
 }
 
+function add_user_to_sudoers() {
+  (sudo grep "^${USER}[[:blank:]]*ALL=(ALL)[[:blank:]]*NOPASSWD\:[[:blank:]]*ALL[[:blank:]]*$" /etc/sudoers 1>/dev/null 2>&1)
+  if [ "$?" -ne "0" ]; then
+    (sudo lockfile -r 0 /etc/sudoers.tmp 1>/dev/null 2>&1)
+    if [ "$?" -ne "0" ]; then
+      echo "/etc/sudoers.tmp exists.  This usually indicates that visudo is in use."
+      exit 1
+    else
+      sudo cp /etc/sudoers /tmp/sudoers.new
+      sudo chmod u+w /tmp/sudoers.new
+      sudo chown $USER /tmp/sudoers.new
+      sudo echo "${USER} ALL=(ALL) NOPASSWD: ALL" >> /tmp/sudoers.new
+
+      visudo -c -f /tmp/sudoers.new
+      if [ "$?" -eq "0" ]; then
+        chmod 440 /tmp/sudoers.new
+        sudo chown root:wheel /tmp/sudoers.new
+        sudo mv /tmp/sudoers.new /etc/sudoers
+      else
+        echo "visudo found a problem with the edits made."
+        sudo rm /etc/sudoers.tmp
+        sudo rm /tmp/sudoers.new
+        exit 1
+      fi
+      sudo rm /etc/sudoers.tmp
+    fi
+  fi
+}
+
 echo -e "\033[1m\nStarting brewstrap...\033[0m\n"
 echo -e "\n"
 echo -e "Brewstrap will make sure your machine is bootstrapped and ready to run chef"
@@ -115,6 +163,9 @@ echo -e "It expects the chef repo to exist as a public or private repository on 
 echo -e "You will need your github credentials so now might be a good time to login to your account."
 
 [[ -s "$BREWSTRAPRC" ]] && source "$BREWSTRAPRC"
+
+echo -e "\nMac OS X Version ${DARWIN_VERSION} detected.\n"
+exit 0
 
 if [ -e .rvmrc ]; then
   print_error "Do not run brewstrap from within a directory with an existing .rvmrc!\nIt causes the wrong environment to load."
@@ -127,39 +178,41 @@ if [ ! -x $WORK_DIR ]; then
   print_error "Unable to access ${WORK_DIR}! Permissions problem?"
 fi
 
+add_user_to_sudoers
+
 if [ -d /tmp/chef ]; then
   print_step "Found old brewstrap directory, removing and symlinking to ${WORK_DIR}/chef"
   rm -rf /tmp/chef && ln -s ${WORK_DIR}/chef /tmp/chef
 fi
 
-print_step "Collecting information.."
-if [ -z $GITHUB_LOGIN ]; then
-  echo -n "Github Username: "
-  stty echo
-  read GITHUB_LOGIN
-  echo ""
-fi
-
-if [ -z $GITHUB_PASSWORD ]; then
-  echo -n "Github Password: "
-  stty -echo
-  read GITHUB_PASSWORD
-  echo ""
-fi
-
-if [ -z $CHEF_REPO ]; then
-  echo -n "Chef Repo (Take the github HTTP URL): "
-  stty echo
-  read CHEF_REPO
-  echo ""
-fi
-stty echo
-
-rm -f $BREWSTRAPRC
-echo "GITHUB_LOGIN=${GITHUB_LOGIN}" >> $BREWSTRAPRC
-echo "GITHUB_PASSWORD=${GITHUB_PASSWORD}" >> $BREWSTRAPRC
-echo "CHEF_REPO=${CHEF_REPO}" >> $BREWSTRAPRC
-chmod 0600 $BREWSTRAPRC
+#print_step "Collecting information.."
+#if [ -z $GITHUB_LOGIN ]; then
+#  echo -n "Github Username: "
+#  stty echo
+#  read GITHUB_LOGIN
+#  echo ""
+#fi
+#
+#if [ -z $GITHUB_PASSWORD ]; then
+#  echo -n "Github Password: "
+#  stty -echo
+#  read GITHUB_PASSWORD
+#  echo ""
+#fi
+#
+#if [ -z $CHEF_REPO ]; then
+#  echo -n "Chef Repo (Take the github HTTP URL): "
+#  stty echo
+#  read CHEF_REPO
+#  echo ""
+#fi
+#stty echo
+#
+#rm -f $BREWSTRAPRC
+#echo "GITHUB_LOGIN=${GITHUB_LOGIN}" >> $BREWSTRAPRC
+#echo "GITHUB_PASSWORD=${GITHUB_PASSWORD}" >> $BREWSTRAPRC
+#echo "CHEF_REPO=${CHEF_REPO}" >> $BREWSTRAPRC
+#chmod 0600 $BREWSTRAPRC
 
 if [ ! -e /usr/local/bin/brew ]; then
   print_step "Installing homebrew"
@@ -206,7 +259,7 @@ if [ ! -e /usr/bin/gcc ]; then
   else
     print_step "There is no GCC available, installing the OSX GCC tools. If you want XCode instead, re-run this script with XCODE=true"
     print_step "Installing OSX GCC Installer from package..."
-    if [ ! -e ${WORK_DIR}/${OSX_GCC_INSTALLER_NAME} ]; then
+    if [ ! -e ${WORK_DIR}/$OSX_GCC_INSTALLER_NAME ]; then
       attempt_to_download_osx_gcc_installer
     else
       OSX_GCC_INSTALLER=`ls -c1 ${WORK_DIR}/GCC-*.pkg | tail -n1`
@@ -215,9 +268,13 @@ if [ ! -e /usr/bin/gcc ]; then
       print_error "Unable to download OSX GCC Installer and it is not installed!"
     fi
     cd `dirname $0`
-    sudo installer -verbose -pkg ${WORK_DIR}/${OSX_GCC_INSTALLER_NAME} -target /
+    sudo installer -verbose -pkg ${WORK_DIR}/$OSX_GCC_INSTALLER_NAME -target /
   fi
 fi
+
+brew update
+brew tap homebrew/homebrew-dupes
+brew install apple-gcc42
 
 GIT_PATH=`which git`
 if [ $? != 0 ]; then
@@ -240,6 +297,8 @@ if [ ! -e /usr/bin/g++-4.2 ]; then
   sudo ln -fs /usr/bin/g++ /usr/bin/g++-4.2
 fi
 
+echo "Got past git install"
+exit 0
 
 if [ $RVM ]; then
   RUBY_RUNNER="rvm ${RVM_RUBY_VERSION} exec"
