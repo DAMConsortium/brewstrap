@@ -9,17 +9,18 @@ RVM_RUBY_VERSION="ruby-1.9.3-p194"
 CHEF_MIN_VERSION="10.12.0"
 CHEF_LIBRARIAN_MIN_VERSION="0.0.24"
 DARWIN_VERSION=`/usr/bin/sw_vers -productVersion | sed 's/\(^[0-9]*\)\.\([0-9]*\)\(\..*\)/\1_\2/'`
+XCODE_DMG_NAME_10_6="xcode_4.2_for_snow_leopard.dmg"
+XCODE_SHA_10_6="e65c19531be855c359eaad3f00a915213ecf2d41"
+XCODE_URL_10_6="http://tdc-files.s3.amazonaws.com/xcode_4.2_for_snow_leopard.dmg"
 XCODE_DMG_NAME_10_7="command_line_tools_for_xcode_4.5_os_x_lion.dmg"
 XCODE_SHA_10_7="fd0181ba0057d473d01537816b0b688672c6a73c"
-XCODE_URL_10_7="http://developer.apple.com/downloads/download.action?path=Developer_Tools/command_line_tools_for_xcode_4.5_os_x_lion__september_2012/command_line_tools_for_xcode_4.5_os_x_lion.dmg"
+XCODE_URL_10_7="http://tdc-files.s3.amazonaws.com/command_line_tools_for_xcode_4.5_os_x_lion.dmg"
 XCODE_DMG_NAME_10_8="command_line_tools_for_xcode_4.5_os_x_mountain_lion.dmg"
 XCODE_SHA_10_8="2c166ad4b58d2aebbfcd32865410ddb6140b9a2c"
-XCODE_URL_10_8="http://developer.apple.com/downloads/download.action?path=Developer_Tools/command_line_tools_for_xcode_4.5_os_x_mountain_lion__september_2012/command_line_tools_for_xcode_4.5_os_x_mountain_lion.dmg"
-if [ $DARWIN_VERSION != "10_6" ]; then
-  XCODE_DMG_NAME=$(eval "echo \${$(echo XCODE_DMG_NAME_${DARWIN_VERSION})}")
-  XCODE_SHA=$(eval "echo \${$(echo XCODE_SHA_${DARWIN_VERSION})}")
-  XCODE_URL=$(eval "echo \${$(echo XCODE_URL_${DARWIN_VERSION})}")
-fi
+XCODE_URL_10_8="http://tdc-files.s3.amazonaws.com/command_line_tools_for_xcode_4.5_os_x_mountain_lion.dmg"
+XCODE_DMG_NAME=$(eval "echo \${$(echo XCODE_DMG_NAME_${DARWIN_VERSION})}")
+XCODE_SHA=$(eval "echo \${$(echo XCODE_SHA_${DARWIN_VERSION})}")
+XCODE_URL=$(eval "echo \${$(echo XCODE_URL_${DARWIN_VERSION})}")
 OSX_GCC_INSTALLER_NAME_10_6="GCC-10.6.pkg"
 OSX_GCC_INSTALLER_URL_10_6="https://github.com/downloads/kennethreitz/osx-gcc-installer/GCC-10.6.pkg"
 OSX_GCC_INSTALLER_SHA_10_6="d3317ab4da8fb7ab24c2a17c986def55a2cef2e1"
@@ -39,7 +40,7 @@ RUBY_GEM_OPTIONS="--no-ri --no-rdoc"
 USING_RVM=0
 TOTAL=14
 STEP=1
-XCODE=false
+XCODE=true
 clear
 
 GIT_DEBUG=""
@@ -62,19 +63,15 @@ function print_error() {
 
 function attempt_to_download_xcode() {
   TOTAL=12
-  echo -e "XCode is not installed or downloaded. Safari will now open to ADC to download XCode."
-  echo -e "Upon logging into your ADC account, download the latest XCode DMG file."
+  echo -e "XCode is not installed or downloaded. Downloading now..."
   echo -e "Brewstrap will continue when the download is complete. Press Ctrl-C to abort."
-  echo -e ""
-  echo -e "Alternatively you can abort this and go download it from the App Store. Once doing that,"
-  echo -e "re-run this to have it install Xcode for you and continue the process."
-  open "${XCODE_URL}"
+  curl -L "$XCODE_URL" > ${WORK_DIR}/$XCODE_DMG_NAME
   SUCCESS="1"
   while [ $SUCCESS -eq "1" ]; do
-    if [ -e ~/Downloads/${XCODE_DMG_NAME} ]; then
-      for file in $(ls -c1 ~/Downloads/${XCODE_DMG_NAME}); do
+    if [ -e ${WORK_DIR}/${XCODE_DMG_NAME} ]; then
+      for file in $(ls -c1 ${WORK_DIR}//${XCODE_DMG_NAME}); do
         echo "Found ${file}. Verifying..."
-        hdiutil verify $file
+        test `shasum ${WORK_DIR}/$XCODE_DMG_NAME | cut -f 1 -d ' '` = "$XCODE_SHA"
         SUCCESS=$?
         if [ $SUCCESS -eq "0" ]; then
           XCODE_DMG=$file
@@ -228,27 +225,27 @@ if [ ! -e /usr/bin/gcc ]; then
   if $XCODE ; then
     print_step "There is no GCC available, installing XCode"
     if [ ! -d /Developer/Applications/Xcode.app ]; then
-      if [ -e /Applications/Install\ Xcode.app ]; then
-        print_step "Installing Xcode from the App Store..."
-        MPKG_PATH=`find /Applications/Install\ Xcode.app | grep Xcode.mpkg | head -n1`
-        sudo installer -verbose -pkg "${MPKG_PATH}" -target /
+#      if [ -e /Applications/Install\ Xcode.app ]; then
+#        print_step "Installing Xcode from the App Store..."
+#        MPKG_PATH=`find /Applications/Install\ Xcode.app | grep Xcode.mpkg | head -n1`
+#        sudo installer -verbose -pkg "${MPKG_PATH}" -target /
+#      else
+      print_step "Installing Xcode from DMG..."
+      if [ ! -e ${WORK_DIR}/$XCODE_DMG_NAME ]; then
+        attempt_to_download_xcode
       else
-        print_step "Installing Xcode from DMG..."
-        if [ ! -e ~/Downloads/${XCODE_DMG_NAME} ]; then
-          attempt_to_download_xcode
-        else
-          XCODE_DMG=`ls -c1 ~/Downloads/xcode*.dmg | tail -n1`
-        fi
-        if [ ! -e $XCODE_DMG ]; then
-          print_error "Unable to download XCode and it is not installed!"
-        fi
-        cd `dirname $0`
-        mkdir -p /Volumes/Xcode
-        hdiutil attach -mountpoint /Volumes/Xcode $XCODE_DMG
-        MPKG_PATH=`find /Volumes/Xcode | grep .mpkg | head -n1`
-        sudo installer -verbose -pkg "${MPKG_PATH}" -target /
-        hdiutil detach -Force /Volumes/Xcode
+        XCODE_DMG=`ls -c1 ${WORK_DIR}/$XCODE_DMG_NAME | tail -n1`
       fi
+      if [ ! -e $XCODE_DMG ]; then
+        print_error "Unable to download XCode and it is not installed!"
+      fi
+      cd `dirname $0`
+      mkdir -p /Volumes/Xcode
+      hdiutil attach -mountpoint /Volumes/Xcode $XCODE_DMG
+      MPKG_PATH=`find /Volumes/Xcode | grep .mpkg | head -n1`
+      sudo installer -verbose -pkg "${MPKG_PATH}" -target /
+      hdiutil detach -Force /Volumes/Xcode
+#      fi
     else
       print_step "Xcode already installed"
     fi
@@ -460,17 +457,19 @@ if [ $? -eq 0 ]; then
 fi
 
 CHEF_DEBUG=""
-if [ ! -z ${DEBUG} ]; then
+if ${DEBUG} ; then
   CHEF_DEBUG="-l debug"
 fi
 
 CHEF_COMMAND="GITHUB_PASSWORD=$GITHUB_PASSWORD GITHUB_LOGIN=$GITHUB_LOGIN ${RUBY_RUNNER} chef-solo -j ${WORK_DIR}/chef/node.json -c ${WORK_DIR}/chef/solo.rb ${CHEF_DEBUG}"
-if [ ! -z ${DEBUG} ]; then
+if ${DEBUG} ; then
   echo $CHEF_COMMAND
 fi
 
-echo -e "Made it up to chef being ready to run"
-exit 0
+if [ ! -d /tmp/chef ]; then
+  print_step "Chef /tmp directory not found.   Symlinking /tmp/chef to ${WORK_DIR}/chef"
+  ln -s ${WORK_DIR}/chef /tmp/chef
+fi
 
 sudo -E env ${CHEF_COMMAND}
 if [ ! $? -eq 0 ]; then
