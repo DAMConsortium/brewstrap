@@ -327,6 +327,15 @@ fi
 
 [[ -s "/etc/profile.d/rvm.sh" ]] && source "/etc/profile.d/rvm.sh"
 
+if [ -s "${HOME}/.gemrc" ] ; then
+  (grep "gem:[[:blank:]]--no-ri[[:blank:]]--no-rdoc" ${HOME}/.gemrc)
+  if [ ! $? -eq 0 ]; then
+    echo "gem: --no-ri --no-rdoc" >> ${HOME}/.gemrc
+  fi
+else
+  echo "gem: --no-ri --no-rdoc" >> ${HOME}/.gemrc
+fi
+
 rvm list | grep ${RVM_RUBY_VERSION}
 if [ $? -gt 0 ]; then
   print_step "Installing RVM Ruby ${RVM_RUBY_VERSION}"
