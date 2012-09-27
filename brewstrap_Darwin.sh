@@ -320,10 +320,6 @@ if [ ! $? -eq 0 ]; then
   fi
 fi
 
-exec bash --login
-
-[[ -s "/etc/profile.d/rvm.sh" ]] && source "/etc/profile.d/rvm.sh"
-
 (grep "^source[[:blank:]]/etc/profile.d/rvm.sh$" /etc/profile)
 if [ "$?" -ne "0" ]; then
   sudo sh -c "echo 'source /etc/profile.d/rvm.sh' >> /etc/profile"
