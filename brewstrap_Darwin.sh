@@ -306,7 +306,7 @@ else
   RVM_VERSION=`/usr/local/rvm/bin/rvm --version | cut -f 2 -d ' ' | head -n2 | tail -n1`
   if [ "${RVM_VERSION}" != "${RVM_MIN_VERSION}" ]; then
     print_step "Current RVM version ${RVM_VERSION} differs from target ${RVM_MIN_VERSION}.  Changing version now."
-    sudo /usr/local/rvm/bin/rvm get ${RVM_MIN_VERSION} --auto
+    /usr/local/rvm/bin/rvm get ${RVM_MIN_VERSION} --auto
   else
     print_step "RVM already installed"
   fi
