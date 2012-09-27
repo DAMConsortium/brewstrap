@@ -325,7 +325,7 @@ if [ "$?" -ne "0" ]; then
   sudo sh -c "echo 'source /etc/profile.d/rvm.sh' >> /etc/profile"
 fi
 
-exec /bin/bash --login
+[[ -s "/etc/profile.d/rvm.sh" ]] && source "/etc/profile.d/rvm.sh"
 
 rvm list | grep ${RVM_RUBY_VERSION}
 if [ $? -gt 0 ]; then
