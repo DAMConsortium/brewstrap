@@ -295,10 +295,10 @@ if [ ! -e /usr/bin/g++-4.2 ]; then
   sudo ln -fs /usr/bin/g++ /usr/bin/g++-4.2
 fi
 
-RUBY_RUNNER="rvm ${RVM_RUBY_VERSION} exec"
+RUBY_RUNNER="/usr/local/rvm/bin/rvm ${RVM_RUBY_VERSION} exec"
 if [ ! -e /usr/local/rvm/bin/rvm ]; then
   print_step "Installing RVM"
-  sudo bash -s stable < <( curl -fsSL ${RVM_URL} )
+  curl -L https://get.rvm.io | sudo bash -s stable
   if [ ! $? -eq 0 ]; then
     print_error "Unable to install RVM!"
   fi
@@ -319,13 +319,12 @@ if [ ! $? -eq 0 ]; then
     print_error "Unable to add ${USER} to path: /Local/Default/Groups/rvm/ key: GroupMembership"
   fi
 fi
-sudo /usr/local/rvm/bin/rvm get ${RVM_MIN_VERSION} --auto
 
 [[ -s "/etc/profile.d/rvm.sh" ]] && source "/etc/profile.d/rvm.sh"
 
-if [ ! -e ~/.bash_profile ]; then
-  echo "[[ -s \"/etc/profile.d/rvm.sh\" ]] && source \"/etc/profile.d/rvm.sh\"" > ~/.bash_profile
-fi
+#if [ ! -e ~/.bash_profile ]; then
+#  echo "[[ -s \"/etc/profile.d/rvm.sh\" ]] && source \"/etc/profile.d/rvm.sh\"" > ~/.bash_profile
+#fi
 
 rvm list | grep ${RVM_RUBY_VERSION}
 if [ $? -gt 0 ]; then
@@ -335,11 +334,11 @@ if [ $? -gt 0 ]; then
     export CC="gcc-4.2"
   fi
   brew install libksba autoconf automake
-  rvm reload
+
   if [ $DARWIN_VERSION != "10_6" ]; then
     CC="/usr/local/bin/gcc-4.2" /usr/local/rvm/bin/rvm install ${RVM_RUBY_VERSION}
   else
-     /usr/local/rvm/bin/rvm install ${RVM_RUBY_VERSION}
+     /usr/local/rvm/bin/rvm install ${RVM_RUBY_VERSION} --with-clang
   fi
   unset CC
   if [ ! $? -eq 0 ]; then
@@ -349,7 +348,7 @@ else
   print_step "RVM Ruby ${RVM_RUBY_VERSION} already installed"
 fi
 
-[[ -s "/etc/profile.d/rvm.sh" ]] && source "/etc/profile.d/rvm.sh" && rvm use ${RVM_RUBY_VERSION} --default
+rvm use ${RVM_RUBY_VERSION} --default
 
 USING_RVM=1
 
