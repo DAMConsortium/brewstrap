@@ -8,7 +8,7 @@ RVM_MIN_VERSION="1.15.9"
 RVM_RUBY_VERSION="ruby-1.9.3-p194"
 CHEF_MIN_VERSION="10.12.0"
 CHEF_LIBRARIAN_MIN_VERSION="0.0.24"
-DARWIN_VERSION=`/usr/bin/sw_vers -productVersion | sed 's/\(^[0-9]*\)\.\([0-9]*\)\(\..*\)/\1_\2/'`
+DARWIN_VERSION=`/usr/bin/sw_vers -productVersion | sed 's/\(^[0-9]*\)\.\([0-9]*\).*/\1_\2/'`
 XCODE_DMG_NAME_10_6="xcode_4.2_for_snow_leopard.dmg"
 XCODE_SHA_10_6="e65c19531be855c359eaad3f00a915213ecf2d41"
 XCODE_URL_10_6="http://tdc-files.s3.amazonaws.com/xcode_4.2_for_snow_leopard.dmg"
@@ -231,7 +231,9 @@ if [ ! -e /usr/bin/gcc ]; then
 #        sudo installer -verbose -pkg "${MPKG_PATH}" -target /
 #      else
       print_step "Installing Xcode from DMG..."
+      echo "XCODE DMG NAME: ${XCODE_DMG_NAME}"
       if [ ! -e ${WORK_DIR}/$XCODE_DMG_NAME ]; then
+        echo -e "Attempting to downlaod xcode"
         attempt_to_download_xcode
       else
         XCODE_DMG=`ls -c1 ${WORK_DIR}/$XCODE_DMG_NAME | tail -n1`
@@ -304,7 +306,7 @@ else
   RVM_VERSION=`/usr/local/rvm/bin/rvm --version | cut -f 2 -d ' ' | head -n2 | tail -n1`
   if [ "${RVM_VERSION}" != "${RVM_MIN_VERSION}" ]; then
     print_step "Current RVM version ${RVM_VERSION} differs from target ${RVM_MIN_VERSION}.  Changing version now."
-    /usr/local/rvm/bin/rvm get ${RVM_MIN_VERSION} --auto
+    sudo /usr/local/rvm/bin/rvm get ${RVM_MIN_VERSION} --auto
   else
     print_step "RVM already installed"
   fi
@@ -317,6 +319,7 @@ if [ ! $? -eq 0 ]; then
     print_error "Unable to add ${USER} to path: /Local/Default/Groups/rvm/ key: GroupMembership"
   fi
 fi
+sudo /usr/local/rvm/bin/rvm get ${RVM_MIN_VERSION} --auto
 
 [[ -s "/etc/profile.d/rvm.sh" ]] && source "/etc/profile.d/rvm.sh"
 
@@ -334,10 +337,9 @@ if [ $? -gt 0 ]; then
   brew install libksba autoconf automake
   rvm reload
   if [ $DARWIN_VERSION != "10_6" ]; then
-
-    ${rvm_path}/bin/rvm install ${RVM_RUBY_VERSION}
+    $CC="/usr/local/bin/gcc-4.2" /usr/local/rvm/bin/rvm install ${RVM_RUBY_VERSION}
   else
-    ${rvm_path}/bin/rvm install ${RVM_RUBY_VERSION} --with-clang
+     /usr/local/rvm/bin/rvm install ${RVM_RUBY_VERSION}
   fi
   unset CC
   if [ ! $? -eq 0 ]; then
