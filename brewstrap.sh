@@ -2,7 +2,7 @@
 
 BREWSTRAP_BASE="https://github.com/DAMConsortium/brewstrap"
 PLATFORM=`uname -s`
-BREWSTRAP_BIN="${BREWSTRAP_BASE}/raw/develop/brewstrap_${PLATFORM}.sh"
+BREWSTRAP_BIN="${BREWSTRAP_BASE}/raw/master/brewstrap_${PLATFORM}.sh"
 
 curl -fsSL "${BREWSTRAP_BIN}" > /tmp/${USER}-brewstrap_${PLATFORM}.sh
 
