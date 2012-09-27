@@ -4,7 +4,7 @@ BREWSTRAPRC="${HOME}/.brewstraprc"
 WORK_DIR="/tmp/${USER}-brewstrap"
 HOMEBREW_URL="http://raw.github.com/mxcl/homebrew/go"
 RVM_URL="https://get.rvm.io"
-RVM_MIN_VERSION="1.15.9"
+RVM_MIN_VERSION="stable"
 RVM_RUBY_VERSION="ruby-1.9.3-p194"
 CHEF_MIN_VERSION="10.12.0"
 CHEF_LIBRARIAN_MIN_VERSION="0.0.24"
@@ -303,13 +303,8 @@ if [ ! -e /usr/local/rvm/bin/rvm ]; then
     print_error "Unable to install RVM!"
   fi
 else
-  RVM_VERSION=`/usr/local/rvm/bin/rvm --version | cut -f 2 -d ' ' | head -n2 | tail -n1`
-  if [ "${RVM_VERSION}" != "${RVM_MIN_VERSION}" ]; then
-    print_step "Current RVM version ${RVM_VERSION} differs from target ${RVM_MIN_VERSION}.  Changing version now."
-    /usr/local/rvm/bin/rvm get ${RVM_MIN_VERSION} --auto
-  else
-    print_step "RVM already installed"
-  fi
+  print_step "RVM found. Updating RVM to ${RVM_MIN_VERSION}"
+  /usr/local/rvm/bin/rvm get ${RVM_MIN_VERSION}
 fi
 
 sudo dscl localhost -read /Local/Default/Groups/rvm/ GroupMembership | grep -w "${USER}"
