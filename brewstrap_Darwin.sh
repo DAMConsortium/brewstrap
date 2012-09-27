@@ -348,7 +348,7 @@ if [ $? -gt 0 ]; then
   if [ $DARWIN_VERSION != "10_6" ]; then
     CC="/usr/local/bin/gcc-4.2" /usr/local/rvm/bin/rvm install ${RVM_RUBY_VERSION}
   else
-     /usr/local/rvm/bin/rvm install ${RVM_RUBY_VERSION} --with-clang
+     /usr/local/rvm/bin/rvm install ${RVM_RUBY_VERSION} --with-gcc=clang
   fi
   unset CC
   if [ ! $? -eq 0 ]; then
@@ -486,7 +486,7 @@ sudo -E env ${CHEF_COMMAND}
 if [ ! $? -eq 0 ]; then
   print_error "BREWSTRAP FAILED!"
 else
-  print_step "BREWSTRAP FINISHED"
+  print_step "BREWSTRAP FINISHED!   Please close the current terminal window and open a new one before continuing!!!"
 fi
 cd $ORIGINAL_PWD
 
