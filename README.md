@@ -2,19 +2,15 @@
 
 OSX Homebrew + rbenv/RVM + Chef Solo
 
-To make it easier to automate the setup of OSX on a development team or across multiple personal machines. This script attempts to install XCode if it is not already installed. Installs homebrew. Then using your github credentials attempts to kick off a chef-solo run of a repository of your choosing. 
-
-You can see an example repository here: https://github.com/schubert/brewstrap-example
+To make it easier to automate the setup of OSX on a development team or across multiple personal machines. This script attempts to install XCode if it is not already installed. Installs homebrew. Then using your github credentials attempts to kick off a chef-solo run of a repository of your choosing.
 
 ### Running
 
-    curl -L http://git.io/PvkgGw > /tmp/$USER-brewstrap.sh && bash /tmp/$USER-brewstrap.sh
+    curl -L http://git.io/QuJe9w > /tmp/$USER-brewstrap.sh && bash /tmp/$USER-brewstrap.sh
 
 ### Options (set before running)
 
     export DEBUG=true # Enable verbose messaging for git, chef librarian and chef-solo
-    export RVM=true # Use/install RVM instead of rbenv
-    export XCODE=true # Attempt to install Xcode from ADC instead of installing Xcode CLI tools
 
 It is recommended now that you just install Xcode through the app store. Apple has not made it easy
 to automatically install Xcode anymore and many homebrew packages will not work with the CLI package.
@@ -40,10 +36,6 @@ will be supported so you can layer a personal repository ontop of a team reposit
 * RVM: http://rvm.beginrescueend.com/
 * Chef: http://wiki.opscode.com/display/chef/Resources
 * Librarian Chef: https://github.com/applicationsonline/librarian
-
-### History
-
-I have multiple machines at home and I get a new laptop every 2 years. Going through and setting things up everytime is a hassle. I could do migrations but I like to use the upgrade as an excuse to clear out any cruft that I may no longer be using.
 
 ### Legal
 
