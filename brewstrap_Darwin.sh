@@ -341,6 +341,7 @@ if [ $? -gt 0 ]; then
   brew install libksba autoconf automake
 
   if [ $DARWIN_VERSION != "10_6" ]; then
+    sudo chgrp -R rvm /usr/local/rvm
     CC="/usr/local/bin/gcc-4.2" /usr/local/rvm/bin/rvm install ${RVM_RUBY_VERSION}
   else
      /usr/local/rvm/bin/rvm install ${RVM_RUBY_VERSION} --with-gcc=clang
